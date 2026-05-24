@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Miamono Desktop</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <h1>Miamono Desktop</h1>
+        <p>Controle de recebimentos para profissionais liberais.</p>
+      </header>
+
+      <nav class="tab-nav" role="tablist">
+        <button class="tab-btn active" data-view="registrations" role="tab" aria-selected="true">Cadastros</button>
+        <button class="tab-btn" data-view="receipts" role="tab" aria-selected="false">Recebimentos</button>
+      </nav>
+
+      <!-- ── Cadastros ───────────────────────────────────────────────────── -->
+      <div id="view-registrations">
+        <section class="layout-grid">
+          <article class="panel">
+            <h2>Serviços</h2>
+            <form id="service-form" class="form-grid">
+              <input type="hidden" id="service-id" />
+              <label for="service-name">Nome do serviço</label>
+              <input id="service-name" name="service-name" placeholder="Ex.: Consultoria Financeira" required />
+              <div class="actions">
+                <button type="submit">Salvar serviço</button>
+                <button type="button" id="service-cancel" class="secondary">Cancelar edição</button>
+              </div>
+            </form>
+            <ul id="service-list" class="list"></ul>
+          </article>
+
+          <article class="panel">
+            <h2>Pagadores</h2>
+            <form id="payer-form" class="form-grid">
+              <input type="hidden" id="payer-id" />
+              <label for="payer-name">Nome do pagador</label>
+              <input id="payer-name" name="payer-name" placeholder="Ex.: Filipe dos Santos" required />
+              <div class="actions">
+                <button type="submit">Salvar pagador</button>
+                <button type="button" id="payer-cancel" class="secondary">Cancelar edição</button>
+              </div>
+            </form>
+            <ul id="payer-list" class="list"></ul>
+          </article>
+        </section>
+      </div>
+
+      <!-- ── Recebimentos ───────────────────────────────────────────────── -->
+      <div id="view-receipts" hidden>
+
+        <!-- Filtros -->
+        <section class="panel filter-panel">
+          <form id="receipt-filter-form">
+            <div class="filter-grid">
+              <div class="filter-field">
+                <label for="filter-month">Mês / Ano *</label>
+                <input type="month" id="filter-month" required />
+              </div>
+              <div class="filter-field">
+                <label for="filter-date">Data específica</label>
+                <input type="date" id="filter-date" />
+              </div>
+              <div class="filter-field">
+                <label for="filter-service">Serviço</label>
+                <select id="filter-service">
+                  <option value="">Todos os serviços</option>
+                </select>
+              </div>
+              <div class="filter-field">
+                <label for="filter-payer">Pagador</label>
+                <select id="filter-payer">
+                  <option value="">Todos os pagadores</option>
+                </select>
+              </div>
+              <div class="filter-field filter-checkbox">
+                <label>
+                  <input type="checkbox" id="filter-has-invoice" />
+                  Somente com nota fiscal
+                </label>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="submit">Filtrar</button>
+              <button type="button" id="btn-filter-clear" class="secondary">Limpar filtros</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Formulário de recebimento (visível ao criar/editar) -->
+        <section id="receipt-form-panel" class="panel" hidden>
+          <h2 id="receipt-form-title">Novo Recebimento</h2>
+          <form id="receipt-form" class="form-grid">
+            <input type="hidden" id="receipt-id" />
+            <div class="form-row-2">
+              <div>
+                <label for="receipt-date">Data *</label>
+                <input type="date" id="receipt-date" required />
+              </div>
+              <div>
+                <label for="receipt-amount">Valor (R$) *</label>
+                <input type="number" id="receipt-amount" min="0.01" step="0.01" placeholder="0,00" required />
+              </div>
+            </div>
+            <div class="form-row-2">
+              <div>
+                <label for="receipt-service">Serviço *</label>
+                <select id="receipt-service" required>
+                  <option value="">Selecionar...</option>
+                </select>
+              </div>
+              <div>
+                <label for="receipt-payer">Pagador *</label>
+                <select id="receipt-payer" required>
+                  <option value="">Selecionar...</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="checkbox-label">
+                <input type="checkbox" id="receipt-has-invoice" />
+                Nota fiscal emitida
+              </label>
+            </div>
+            <div>
+              <label for="receipt-notes">Observações</label>
+              <textarea id="receipt-notes" rows="2" placeholder="Opcional"></textarea>
+            </div>
+            <div class="actions">
+              <button type="submit">Salvar recebimento</button>
+              <button type="button" id="receipt-cancel" class="secondary">Cancelar</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Resultados -->
+        <section class="panel">
+          <div class="table-header">
+            <div id="receipt-totals" class="totals-bar"></div>
+            <button type="button" id="btn-new-receipt">+ Novo recebimento</button>
+          </div>
+          <p id="receipt-hint" class="empty-state">Selecione mês e ano e clique em Filtrar para ver os recebimentos.</p>
+          <p id="receipt-empty" class="empty-state" hidden>Nenhum recebimento encontrado para os filtros aplicados.</p>
+          <div class="table-wrapper" id="receipt-table-wrapper" hidden>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Serviço</th>
+                  <th>Pagador</th>
+                  <th class="col-right">Valor</th>
+                  <th class="col-center">NF</th>
+                  <th>Observações</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="receipt-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

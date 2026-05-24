@@ -18,16 +18,16 @@ Objetivo:
 
 Tarefas detalhadas:
 
-- [ ] Criar estrutura base Electron com Node.js v24 e TypeScript nativo.
-- [ ] Definir arquitetura em camadas (view, controller, service/use_case, repository).
-- [ ] Definir estrutura por domínios: receipts, services, payers, exports.
-- [ ] Configurar módulo de infraestrutura para acesso ao SQLite com API nativa.
-- [ ] Habilitar foreign_keys no SQLite e política de inicialização do banco.
-- [ ] Criar migrations iniciais para tabelas services, payers e receipts.
-- [ ] Garantir nomenclatura de tabelas e colunas em inglês e snake_case.
-- [ ] Criar camada de configuração comum para ambiente de desenvolvimento.
-- [ ] Definir padrão de tratamento de erro técnico e de domínio.
-- [ ] Documentar decisões arquiteturais principais.
+- [x] Criar estrutura base Electron com Node.js v24 e TypeScript nativo.
+- [x] Definir arquitetura em camadas (view, controller, service/use_case, repository).
+- [x] Definir estrutura por domínios: receipts, services, payers, exports.
+- [x] Configurar módulo de infraestrutura para acesso ao SQLite com API nativa.
+- [x] Habilitar foreign_keys no SQLite e política de inicialização do banco.
+- [x] Criar migrations iniciais para tabelas services, payers e receipts.
+- [x] Garantir nomenclatura de tabelas e colunas em inglês e snake_case.
+- [x] Criar camada de configuração comum para ambiente de desenvolvimento.
+- [x] Definir padrão de tratamento de erro técnico e de domínio.
+- [x] Documentar decisões arquiteturais principais.
 
 Itens de backlog relacionados:
 
@@ -48,15 +48,15 @@ Objetivo:
 
 Tarefas detalhadas:
 
-- [ ] Implementar casos de uso de criação, atualização, listagem e inativação de services.
-- [ ] Implementar casos de uso de criação, atualização, listagem e inativação de payers.
-- [ ] Criar telas de cadastro e listagem para serviços e pagadores.
-- [ ] Aplicar normalização de nomes na camada de domínio antes de persistir.
-- [ ] Implementar regra de capitalização com artigos e preposições em lowercase.
-- [ ] Cobrir normalização com testes unitários (casos simples e compostos).
-- [ ] Validar unicidade de service_name e payer_full_name com mensagens claras.
-- [ ] Garantir que atualizações mantenham a mesma regra de normalização.
-- [ ] Implementar feedback de erro de validação na interface.
+- [x] Implementar casos de uso de criação, atualização, listagem e inativação de services.
+- [x] Implementar casos de uso de criação, atualização, listagem e inativação de payers.
+- [x] Criar telas de cadastro e listagem para serviços e pagadores.
+- [x] Aplicar normalização de nomes na camada de domínio antes de persistir.
+- [x] Implementar regra de capitalização com artigos e preposições em lowercase.
+- [x] Cobrir normalização com testes unitários (casos simples e compostos).
+- [x] Validar unicidade de service_name e payer_full_name com mensagens claras.
+- [x] Garantir que atualizações mantenham a mesma regra de normalização.
+- [x] Implementar feedback de erro de validação na interface.
 
 Itens de backlog relacionados:
 
@@ -76,15 +76,15 @@ Objetivo:
 
 Tarefas detalhadas:
 
-- [ ] Implementar cadastro de receipts com validações de data, valor e relacionamentos.
-- [ ] Implementar listagem tabular de receipts.
-- [ ] Implementar filtro obrigatório por mês e ano.
-- [ ] Implementar filtros adicionais por data, serviço, pagador e has_invoice.
-- [ ] Criar consultas otimizadas com uso dos índices recomendados.
-- [ ] Implementar paginação simples ou estratégia de carregamento eficiente na listagem.
-- [ ] Exibir totais básicos da listagem filtrada (quantidade e soma de valores).
-- [ ] Implementar tratamento de estado vazio e mensagens de erro amigáveis.
-- [ ] Criar testes de integração dos repositórios para consultas filtradas.
+- [x] Implementar cadastro de receipts com validações de data, valor e relacionamentos.
+- [x] Implementar listagem tabular de receipts.
+- [x] Implementar filtro obrigatório por mês e ano.
+- [x] Implementar filtros adicionais por data, serviço, pagador e has_invoice.
+- [x] Criar consultas otimizadas com uso dos índices recomendados.
+- [x] Implementar paginação simples ou estratégia de carregamento eficiente na listagem.
+- [x] Exibir totais básicos da listagem filtrada (quantidade e soma de valores).
+- [x] Implementar tratamento de estado vazio e mensagens de erro amigáveis.
+- [x] Criar testes de integração dos repositórios para consultas filtradas.
 
 Itens de backlog relacionados:
 

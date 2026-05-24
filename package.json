@@ -1,0 +1,26 @@
+{
+  "name": "miamono-desktop",
+  "version": "1.0.0",
+  "description": "Aplicativo desktop open source para registro, consulta e exportação de recebimentos, pensado para profissionais liberais que precisam manter controle financeiro organizado e histórico confiável.",
+  "main": "src/main/main.ts",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_OPTIONS=--experimental-strip-types electron .",
+    "start": "cross-env NODE_OPTIONS=--experimental-strip-types electron .",
+    "migrate": "node --experimental-strip-types src/scripts/migrate.ts",
+    "test": "node --experimental-strip-types --test src/shared/utils/name-normalizer.test.ts src/infrastructure/repositories/sqlite/sqlite-receipt-repository.test.ts",
+    "check": "node --experimental-strip-types --check src/main/main.ts",
+    "check:migrate": "node --experimental-strip-types --check src/scripts/migrate.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "electron": "^42.2.0"
+  }
+}
