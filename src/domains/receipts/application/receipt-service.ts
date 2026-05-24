@@ -17,11 +17,19 @@ const isValidIsoDate = (value: string): boolean => {
 };
 
 export class ReceiptService {
+  private readonly receiptRepository: ReceiptRepository;
+  private readonly serviceRepository: ServiceRepository;
+  private readonly payerRepository: PayerRepository;
+
   constructor(
-    private readonly receiptRepository: ReceiptRepository,
-    private readonly serviceRepository: ServiceRepository,
-    private readonly payerRepository: PayerRepository,
-  ) {}
+    receiptRepository: ReceiptRepository,
+    serviceRepository: ServiceRepository,
+    payerRepository: PayerRepository,
+  ) {
+    this.receiptRepository = receiptRepository;
+    this.serviceRepository = serviceRepository;
+    this.payerRepository = payerRepository;
+  }
 
   private validateInput(input: CreateReceiptInput): void {
     if (!input.receiptDate || !isValidIsoDate(input.receiptDate)) {

@@ -2,7 +2,11 @@ import type { ReceiptService } from "../application/receipt-service.ts";
 import type { CreateReceiptInput, ReceiptFilter } from "../repository/receipt-repository.ts";
 
 export class ReceiptController {
-  constructor(private readonly receiptService: ReceiptService) {}
+  private readonly receiptService: ReceiptService;
+
+  constructor(receiptService: ReceiptService) {
+    this.receiptService = receiptService;
+  }
 
   create(input: CreateReceiptInput) {
     return this.receiptService.create(input);
