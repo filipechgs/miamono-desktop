@@ -152,6 +152,50 @@ npm start
 - Se `npm run seed` falhar porque `py` não foi encontrado, instale o Python no Windows com o launcher padrão habilitado ou execute o script diretamente com o caminho completo do interpretador.
 - Se o aplicativo estiver aberto enquanto você roda o seed, feche-o antes de executar o comando para evitar bloqueio no arquivo SQLite.
 
+## Download e Instalação (Usuário Final)
+
+As versões distribuíveis são publicadas na área de releases do repositório.
+
+### Windows
+
+1. Baixe o instalador `.exe` da versão desejada.
+2. Execute o instalador e conclua o assistente.
+3. Abra o aplicativo pelo atalho criado no menu iniciar/desktop.
+
+### Linux
+
+Há dois formatos suportados:
+
+- **AppImage**: arquivo único executável.
+- **tar.gz**: pacote compactado para execução manual.
+
+Passos sugeridos para AppImage:
+
+```bash
+chmod +x Miamono-Desktop-*.AppImage
+./Miamono-Desktop-*.AppImage
+```
+
+## Build de Distribuição
+
+Comandos principais para gerar artefatos:
+
+```bash
+npm run package:dir    # pacote local sem instalador
+npm run package:win    # instalador Windows (NSIS)
+npm run package:linux  # AppImage + tar.gz
+```
+
+Observação: o empacotamento Linux é recomendado em runner Linux (workflow de release) ou máquina Linux local.
+
+### Validação de release
+
+```bash
+npm run test:regression
+```
+
+Esse comando executa o fluxo mínimo de regressão (build + seed).
+
 ## Fora do Escopo Inicial
 
 - Mecanismos de autenticação e gestão de usuários não fazem parte da primeira versão do projeto.
@@ -159,7 +203,9 @@ npm start
 
 ## Licenciamento e Open Source
 
-O projeto será disponibilizado como open source, permitindo uso, estudo, melhorias e contribuições da comunidade. A definição da licença pode ser formalizada na evolução do repositório (ex.: MIT).
+O projeto é open source sob licença **MIT**. Consulte o arquivo `LICENSE`.
+
+Diretrizes de contribuição estão em `CONTRIBUTING.md`.
 
 ## Objetivo de Valor
 

@@ -4,9 +4,16 @@ import { createAppContext } from "./bootstrap/app-context.ts";
 import { registerIpcHandlers } from "./ipc/register-ipc.ts";
 
 const appContext = createAppContext();
-const appIconPath = process.platform === "win32"
-  ? join(app.getAppPath(), "doc", "miamono-mascote.ico")
-  : join(app.getAppPath(), "doc", "miamono-mascote.png");
+
+const resolveIconPath = (): string => {
+  const iconFileName = process.platform === "win32" ? "miamono-mascote.ico" : "miamono-mascote.png";
+
+  return app.isPackaged
+    ? join(process.resourcesPath, "doc", iconFileName)
+    : join(app.getAppPath(), "doc", iconFileName);
+};
+
+const appIconPath = resolveIconPath();
 
 const createMainWindow = (): BrowserWindow => {
   const mainWindow = new BrowserWindow({
@@ -25,8 +32,10 @@ const createMainWindow = (): BrowserWindow => {
 
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
-    // Abrir DevTools para debug
-    mainWindow.webContents.openDevTools();
+
+    if (!app.isPackaged) {
+      mainWindow.webContents.openDevTools();
+    }
   });
 
   void mainWindow.loadFile(join(app.getAppPath(), "dist", "renderer", "index.html"));

@@ -3,14 +3,17 @@
   "version": "1.0.0",
   "description": "Aplicativo desktop open source para registro, consulta e exportação de recebimentos, pensado para profissionais liberais que precisam manter controle financeiro organizado e histórico confiável.",
   "main": "dist/main/main.js",
-  "directories": {
-    "doc": "doc"
-  },
   "scripts": {
     "build": "node -e \"require('fs').mkdirSync('dist/main', { recursive: true }); require('fs').mkdirSync('dist/preload', { recursive: true })\" && esbuild src/main/main.ts --bundle --platform=node --format=esm --outfile=dist/main/main.js --external:electron --external:sqlite && esbuild src/preload/preload.ts --bundle --platform=node --format=cjs --outfile=dist/preload/preload.js --external:electron && esbuild src/renderer/main.ts --format=esm --outfile=dist/renderer/main.js && node -e \"require('fs').copyFileSync('src/renderer/index.html', 'dist/renderer/index.html')\" && node -e \"require('fs').copyFileSync('src/renderer/styles.css', 'dist/renderer/styles.css')\" && node -e \"require('fs').copyFileSync('doc/miamono-mascote.png', 'dist/renderer/miamono-mascote.png')\"",
     "icon:generate": "node src/scripts/generate-icon.mjs",
     "dev": "npm run build && electron .",
     "start": "npm run build && electron .",
+    "package:dir": "npm run build && npm run icon:generate && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
+    "package:win": "npm run build && npm run icon:generate && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis",
+    "package:linux": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --linux AppImage tar.gz",
+    "package:all": "npm run build && npm run icon:generate && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis --linux AppImage tar.gz",
+    "release:check": "npm run build && npm run seed",
+    "test:regression": "npm run release:check",
     "migrate": "node --experimental-strip-types src/scripts/migrate.ts",
     "seed": "py -3 src/scripts/seed.py",
     "test": "node --experimental-strip-types --test src/shared/utils/name-normalizer.test.ts src/infrastructure/repositories/sqlite/sqlite-receipt-repository.test.ts",
@@ -19,12 +22,13 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "devDependencies": {
     "cross-env": "^10.1.0",
     "electron": "^42.2.0",
+    "electron-builder": "^25.1.8",
     "esbuild": "^0.28.0",
     "png-to-ico": "^3.0.1"
   }

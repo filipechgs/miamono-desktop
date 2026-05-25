@@ -136,16 +136,16 @@ Objetivo:
 
 Tarefas detalhadas:
 
-- [ ] Configurar build e packaging para instalador Windows.
-- [ ] Incluir ícone oficial da aplicação no empacotamento do instalador (BL-017).
-- [ ] Configurar build e packaging para executável Linux.
-- [ ] Validar processo de geração de artefatos em ambiente limpo.
-- [ ] Definir convenção de versionamento para releases.
-- [ ] Criar processo de release com changelog e publicação de artefatos.
-- [ ] Definir licença do projeto e diretrizes de contribuição.
-- [ ] Revisar README com instruções de download e instalação por sistema.
-- [ ] Garantir checklist final de qualidade antes de release.
-- [ ] Executar bateria final de testes funcionais de regressão.
+- [x] Configurar build e packaging para instalador Windows.
+- [x] Incluir ícone oficial da aplicação no empacotamento do instalador (BL-017).
+- [x] Configurar build e packaging para executável Linux.
+- [x] Validar processo de geração de artefatos em ambiente limpo.
+- [x] Definir convenção de versionamento para releases.
+- [x] Criar processo de release com changelog e publicação de artefatos.
+- [x] Definir licença do projeto e diretrizes de contribuição.
+- [x] Revisar README com instruções de download e instalação por sistema.
+- [x] Garantir checklist final de qualidade antes de release.
+- [x] Executar bateria final de testes funcionais de regressão.
 
 Itens de backlog relacionados:
 
