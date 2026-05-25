@@ -813,7 +813,7 @@ const renderReceiptSectionTable = (section: ExportSection): HTMLDivElement => {
         const result = await window.miamono.receipts.remove(item.id);
         if (result.ok) {
           showFeedback("Recebimento excluído.");
-          await runFilter();
+          await refreshReceiptsViewAfterMutation(item.receiptDate);
         } else {
           showFeedback(result.errorMessage ?? "Erro ao excluir recebimento.", true);
         }
@@ -892,6 +892,24 @@ const initReceiptsView = async (): Promise<void> => {
     const payerItems = receiptViewPayers.map((p) => ({ id: p.id, label: p.payerFullName }));
     populateSelectOptions(filterPayerSelect, payerItems, "Todos os pagadores");
     populateSelectOptions(receiptPayerSelect, payerItems, "Selecionar...");
+  }
+
+  await runFilter();
+};
+
+const refreshReceiptsViewAfterMutation = async (referenceDate?: string): Promise<void> => {
+  const yearsResult = await window.miamono.receipts.listYears();
+  const years = yearsResult.ok && yearsResult.data
+    ? yearsResult.data
+    : [];
+
+  populateYearOptions(filterYearSelect, years);
+
+  if (!filterYearSelect.value && referenceDate) {
+    const referenceYear = Number(referenceDate.slice(0, 4));
+    if (years.includes(referenceYear)) {
+      filterYearSelect.value = String(referenceYear);
+    }
   }
 
   await runFilter();
@@ -1054,7 +1072,7 @@ receiptForm.addEventListener("submit", async (event) => {
     if (result.ok) {
       showFeedback("Recebimento atualizado com sucesso.");
       closeReceiptForm();
-      await runFilter();
+      await refreshReceiptsViewAfterMutation(result.data?.receiptDate ?? input.receiptDate);
     } else {
       showFeedback(result.errorMessage ?? "Erro ao atualizar recebimento.", true);
     }
@@ -1063,7 +1081,7 @@ receiptForm.addEventListener("submit", async (event) => {
     if (result.ok) {
       showFeedback("Recebimento cadastrado com sucesso.");
       closeReceiptForm();
-      await runFilter();
+      await refreshReceiptsViewAfterMutation(result.data?.receiptDate ?? input.receiptDate);
     } else {
       showFeedback(result.errorMessage ?? "Erro ao cadastrar recebimento.", true);
     }

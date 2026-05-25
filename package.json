@@ -9,7 +9,10 @@
     "dev": "npm run build && electron .",
     "start": "npm run build && electron .",
     "package:dir": "npm run build && npm run icon:generate && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
-    "package:win": "npm run build && npm run icon:generate && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis",
+    "package:win:dir": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --dir",
+    "package:win:patch-icon": "node src/scripts/patch-windows-exe-icon.mjs",
+    "package:win:installer": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis --prepackaged release/win-unpacked",
+    "package:win": "npm run build && npm run icon:generate && npm run package:win:dir && npm run package:win:patch-icon && npm run package:win:installer",
     "package:linux": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --linux AppImage tar.gz",
     "package:all": "npm run build && npm run icon:generate && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis --linux AppImage tar.gz",
     "release:check": "npm run build && npm run seed",
@@ -30,6 +33,7 @@
     "electron": "^42.2.0",
     "electron-builder": "^25.1.8",
     "esbuild": "^0.28.0",
-    "png-to-ico": "^3.0.1"
+    "png-to-ico": "^3.0.1",
+    "rcedit": "^4.0.1"
   }
 }

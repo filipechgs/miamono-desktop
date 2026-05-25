@@ -4,8 +4,13 @@ directories:
   output: release
 files:
   - dist/**
-  - doc/**
   - package.json
+extraResources:
+  - from: doc
+    to: doc
+    filter:
+      - miamono-mascote.ico
+      - miamono-mascote.png
 extraMetadata:
   main: dist/main/main.js
 asar: true
@@ -17,7 +22,8 @@ win:
 forceCodeSigning: false
 nsis:
   oneClick: false
-  perMachine: false
+  perMachine: true
+  allowElevation: true
   allowToChangeInstallationDirectory: true
 linux:
   target:

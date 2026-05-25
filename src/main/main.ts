@@ -7,8 +7,9 @@ const appContext = createAppContext();
 
 const resolveIconPath = (): string => {
   const iconFileName = process.platform === "win32" ? "miamono-mascote.ico" : "miamono-mascote.png";
+  const basePath = app.isPackaged ? process.resourcesPath : app.getAppPath();
 
-  return join(app.getAppPath(), "doc", iconFileName);
+  return join(basePath, "doc", iconFileName);
 };
 
 const appIconPath = resolveIconPath();
