@@ -1,0 +1,17 @@
+{
+  "name": "Miamono Desktop",
+  "short_name": "Miamono",
+  "description": "Aplicativo desktop open source para registro, consulta e exportação de recebimentos.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#007f5f",
+  "icons": [
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

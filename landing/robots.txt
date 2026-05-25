@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://filipechgs.github.io/miamono-desktop/sitemap.xml
