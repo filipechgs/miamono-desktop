@@ -1,5 +1,6 @@
 appId: com.miamono.desktop
 productName: Miamono Desktop
+artifactName: Instalador-Miamono-Desktop-${version}.${ext}
 directories:
   output: release
 files:

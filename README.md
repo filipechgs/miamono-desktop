@@ -1,10 +1,18 @@
-# Miamono Desktop
+<p align="left">
+  <img src="doc/miamono-mascote.png" alt="Ícone do Miamono Desktop" width="40" align="left" />
+  <span style="display:inline-block; vertical-align:middle; margin-left:0.75rem; font-size:2rem; font-weight:700; line-height:40px;">Miamono Desktop</span>
+</p>
+
+Landing page do projeto: [landing/index.html](landing/index.html)
+Site público no GitHub Pages: https://filipechgs.github.io/miamono-desktop/
 
 Aplicativo desktop open source para registro, consulta e exportação de recebimentos, pensado para profissionais liberais que precisam manter controle financeiro organizado e histórico confiável.
 
+Este projeto também reflete meu desejo de contribuir para a comunidade com um software gratuito, aberto e útil para o dia a dia real.
+
 ## Motivação
 
-Este projeto nasce de uma necessidade real: oferecer uma forma simples, prática e confiável de acompanhar recebimentos de serviços prestados no dia a dia. A proposta é apoiar profissionais autônomos e liberais no controle de entradas financeiras, na conferência por período (mês/ano), e na geração de relatórios para análise e organização documental.
+Este projeto nasce de uma necessidade real: oferecer uma forma simples, prática e confiável de acompanhar recebimentos de serviços prestados no dia a dia. A proposta é apoiar profissionais autônomos e liberais - como minha esposa e eu - no controle de entradas financeiras, na conferência por período (mês/ano), e na geração de relatórios para análise e organização documental. A segurança da informação e proteção dos dados é assegurada pelo funcionamento offline em ambiente desktop.
 
 A motivação principal é atender ao cenário de uso de uma profissional liberal que precisa monitorar recebimentos com clareza, manter histórico e facilitar a rotina de conferência de pagamentos e notas fiscais.
 
