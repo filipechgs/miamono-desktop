@@ -8,9 +8,7 @@ const appContext = createAppContext();
 const resolveIconPath = (): string => {
   const iconFileName = process.platform === "win32" ? "miamono-mascote.ico" : "miamono-mascote.png";
 
-  return app.isPackaged
-    ? join(process.resourcesPath, "doc", iconFileName)
-    : join(app.getAppPath(), "doc", iconFileName);
+  return join(app.getAppPath(), "doc", iconFileName);
 };
 
 const appIconPath = resolveIconPath();
@@ -44,6 +42,10 @@ const createMainWindow = (): BrowserWindow => {
 };
 
 app.whenReady().then(() => {
+  if (process.platform === "win32") {
+    app.setAppUserModelId("com.miamono.desktop");
+  }
+
   registerIpcHandlers(appContext);
   createMainWindow();
 
