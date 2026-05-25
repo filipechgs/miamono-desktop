@@ -85,6 +85,9 @@ declare global {
   }
 }
 
+// ── Initialization ────────────────────────────────────────────────────────────
+console.log("Renderer initialized, miamono API available:", typeof window.miamono);
+
 // ── Feedback ──────────────────────────────────────────────────────────────────
 
 const feedbackEl = document.getElementById("feedback") as HTMLParagraphElement;
@@ -195,24 +198,28 @@ serviceForm.addEventListener("submit", async (event) => {
 
   const existingId = serviceIdInput.value ? Number(serviceIdInput.value) : null;
 
-  if (existingId) {
-    const result = await window.miamono.services.update(existingId, name);
-    if (result.ok) {
-      showFeedback("Serviço atualizado com sucesso.");
-      resetServiceForm();
-      await loadServices();
+  try {
+    if (existingId) {
+      const result = await window.miamono.services.update(existingId, name);
+      if (result.ok) {
+        showFeedback("Serviço atualizado com sucesso.");
+        resetServiceForm();
+        await loadServices();
+      } else {
+        showFeedback(result.errorMessage ?? "Erro ao atualizar serviço.", true);
+      }
     } else {
-      showFeedback(result.errorMessage ?? "Erro ao atualizar serviço.", true);
+      const result = await window.miamono.services.create(name);
+      if (result.ok) {
+        showFeedback("Serviço cadastrado com sucesso.");
+        resetServiceForm();
+        await loadServices();
+      } else {
+        showFeedback(result.errorMessage ?? "Erro ao cadastrar serviço.", true);
+      }
     }
-  } else {
-    const result = await window.miamono.services.create(name);
-    if (result.ok) {
-      showFeedback("Serviço cadastrado com sucesso.");
-      resetServiceForm();
-      await loadServices();
-    } else {
-      showFeedback(result.errorMessage ?? "Erro ao cadastrar serviço.", true);
-    }
+  } catch (error) {
+    showFeedback("Erro inesperado ao processar formulário.", true);
   }
 });
 
@@ -370,6 +377,19 @@ document.querySelectorAll<HTMLButtonElement>(".tab-btn").forEach((btn) => {
 const formatCurrency = (cents: number): string =>
   (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const formatCurrencyInput = (cents: number): string =>
+  (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const parseCurrencyInputToCents = (value: string): number | null => {
+  const digitsOnly = value.replace(/\D/g, "");
+  if (!digitsOnly) return null;
+
+  const cents = Number(digitsOnly);
+  if (!Number.isFinite(cents) || cents <= 0) return null;
+
+  return cents;
+};
+
 const formatDate = (isoDate: string): string => {
   const [year, month, day] = isoDate.split("-");
   return `${day}/${month}/${year}`;
@@ -408,6 +428,11 @@ const btnNewReceipt = document.getElementById("btn-new-receipt") as HTMLButtonEl
 // Track all active services/payers loaded for the receipts view
 let receiptViewServices: ServiceData[] = [];
 let receiptViewPayers: PayerData[] = [];
+
+const applyReceiptAmountMask = (): void => {
+  const cents = parseCurrencyInputToCents(receiptAmountInput.value);
+  receiptAmountInput.value = cents ? formatCurrencyInput(cents) : "";
+};
 
 const populateSelectOptions = (
   select: HTMLSelectElement,
@@ -608,7 +633,7 @@ const openReceiptCreateForm = (): void => {
 const openReceiptEditForm = (item: ReceiptViewData): void => {
   receiptIdInput.value = String(item.id);
   receiptDateInput.value = item.receiptDate;
-  receiptAmountInput.value = (item.amountCents / 100).toFixed(2);
+  receiptAmountInput.value = formatCurrencyInput(item.amountCents);
   receiptServiceSelect.value = String(item.serviceId);
   receiptPayerSelect.value = String(item.payerId);
   receiptHasInvoiceCheckbox.checked = item.hasInvoice;
@@ -625,17 +650,17 @@ const closeReceiptForm = (): void => {
 
 btnNewReceipt.addEventListener("click", openReceiptCreateForm);
 receiptCancelBtn.addEventListener("click", closeReceiptForm);
+receiptAmountInput.addEventListener("input", applyReceiptAmountMask);
+receiptAmountInput.addEventListener("blur", applyReceiptAmountMask);
 
 receiptForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const amountRaw = parseFloat(receiptAmountInput.value);
-  if (isNaN(amountRaw) || amountRaw <= 0) {
+  const amountCents = parseCurrencyInputToCents(receiptAmountInput.value);
+  if (!amountCents) {
     showFeedback("Informe um valor válido maior que zero.", true);
     return;
   }
-
-  const amountCents = Math.round(amountRaw * 100);
 
   const input: CreateReceiptInput = {
     receiptDate: receiptDateInput.value,

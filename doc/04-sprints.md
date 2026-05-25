@@ -133,6 +133,7 @@ Objetivo:
 Tarefas detalhadas:
 
 - [ ] Configurar build e packaging para instalador Windows.
+- [ ] Incluir ícone oficial da aplicação no empacotamento do instalador (BL-017).
 - [ ] Configurar build e packaging para executável Linux.
 - [ ] Validar processo de geração de artefatos em ambiente limpo.
 - [ ] Definir convenção de versionamento para releases.

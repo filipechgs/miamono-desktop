@@ -7,7 +7,8 @@
     "doc": "doc"
   },
   "scripts": {
-    "build": "esbuild src/main/main.ts src/preload/preload.ts --bundle --platform=node --format=esm --outdir=dist --external:electron --external:sqlite",
+    "build": "node -e \"require('fs').mkdirSync('dist/main', { recursive: true }); require('fs').mkdirSync('dist/preload', { recursive: true })\" && esbuild src/main/main.ts --bundle --platform=node --format=esm --outfile=dist/main/main.js --external:electron --external:sqlite && esbuild src/preload/preload.ts --bundle --platform=node --format=cjs --outfile=dist/preload/preload.js --external:electron && esbuild src/renderer/main.ts --format=esm --outfile=dist/renderer/main.js && node -e \"require('fs').copyFileSync('src/renderer/index.html', 'dist/renderer/index.html')\" && node -e \"require('fs').copyFileSync('src/renderer/styles.css', 'dist/renderer/styles.css')\" && node -e \"require('fs').copyFileSync('doc/miamono-mascote.png', 'dist/renderer/miamono-mascote.png')\"",
+    "icon:generate": "node src/scripts/generate-icon.mjs",
     "dev": "npm run build && electron .",
     "start": "npm run build && electron .",
     "migrate": "node --experimental-strip-types src/scripts/migrate.ts",
@@ -23,6 +24,7 @@
   "devDependencies": {
     "cross-env": "^10.1.0",
     "electron": "^42.2.0",
-    "esbuild": "^0.28.0"
+    "esbuild": "^0.28.0",
+    "png-to-ico": "^3.0.1"
   }
 }
