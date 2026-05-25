@@ -121,6 +121,10 @@ export class ReceiptService {
     return this.receiptRepository.findById(id);
   }
 
+  listAvailableYears() {
+    return this.receiptRepository.listAvailableYears();
+  }
+
   listFiltered(filter: ReceiptFilter) {
     return this.receiptRepository.listFiltered(filter);
   }

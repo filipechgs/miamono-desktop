@@ -1,6 +1,9 @@
-import { ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { DomainError } from "../../shared/errors/domain-error.ts";
 import { TechnicalError } from "../../shared/errors/technical-error.ts";
+import { ExportService, type ExportDocument } from "../../domains/exports/application/export-service.ts";
 import type { AppContext } from "../bootstrap/app-context.ts";
 import type { CreateReceiptInput, ReceiptFilter } from "../../domains/receipts/repository/receipt-repository.ts";
 
@@ -27,6 +30,14 @@ const resolveErrorMessage = (error: unknown): string => {
 };
 
 export const registerIpcHandlers = (context: AppContext): void => {
+  const exportService = new ExportService();
+
+  const buildDefaultFileName = (document: ExportDocument, extension: "csv" | "pdf"): string => {
+    return `${document.fileNameBase}.${extension}`;
+  };
+
+  const resolveExportDir = (): string => app.getPath("documents");
+
   ipcMain.handle("services:list", () => success(context.serviceController.getList()));
 
   ipcMain.handle("services:create", (_event, serviceName: string) => {
@@ -89,6 +100,14 @@ export const registerIpcHandlers = (context: AppContext): void => {
     }
   });
 
+  ipcMain.handle("receipts:list-years", () => {
+    try {
+      return success(context.receiptController.getAvailableYears());
+    } catch (error) {
+      return failure(resolveErrorMessage(error));
+    }
+  });
+
   ipcMain.handle("receipts:create", (_event, input: CreateReceiptInput) => {
     try {
       return success(context.receiptController.create(input));
@@ -111,6 +130,79 @@ export const registerIpcHandlers = (context: AppContext): void => {
       return success(true);
     } catch (error) {
       return failure(resolveErrorMessage(error));
+    }
+  });
+
+  ipcMain.handle("exports:csv", async (_event, document: ExportDocument) => {
+    try {
+      if (document.summary.totalCount === 0) {
+        return failure("Não há recebimentos para exportar com os filtros aplicados.");
+      }
+
+      const saveResult = await dialog.showSaveDialog({
+        title: "Exportar CSV",
+        defaultPath: join(resolveExportDir(), buildDefaultFileName(document, "csv")),
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+
+      if (saveResult.canceled || !saveResult.filePath) {
+        return success({ saved: false });
+      }
+
+      const csv = exportService.toCsv(document);
+      await writeFile(saveResult.filePath, csv, "utf-8");
+
+      return success({ saved: true, filePath: saveResult.filePath });
+    } catch (error) {
+      return failure(resolveErrorMessage(error));
+    }
+  });
+
+  ipcMain.handle("exports:pdf", async (_event, document: ExportDocument) => {
+    let pdfWindow: BrowserWindow | null = null;
+
+    try {
+      if (document.summary.totalCount === 0) {
+        return failure("Não há recebimentos para exportar com os filtros aplicados.");
+      }
+
+      const saveResult = await dialog.showSaveDialog({
+        title: "Exportar PDF",
+        defaultPath: join(resolveExportDir(), buildDefaultFileName(document, "pdf")),
+        filters: [{ name: "PDF", extensions: ["pdf"] }],
+      });
+
+      if (saveResult.canceled || !saveResult.filePath) {
+        return success({ saved: false });
+      }
+
+      pdfWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          contextIsolation: true,
+        },
+      });
+
+      const html = exportService.toPdfHtml(document);
+      const encodedHtml = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+      await pdfWindow.loadURL(encodedHtml);
+
+      const pdfBuffer = await pdfWindow.webContents.printToPDF({
+        printBackground: true,
+        landscape: false,
+        margins: { top: 0.5, bottom: 0.5, left: 0.4, right: 0.4 },
+      });
+
+      await writeFile(saveResult.filePath, pdfBuffer);
+
+      return success({ saved: true, filePath: saveResult.filePath });
+    } catch (error) {
+      return failure(resolveErrorMessage(error));
+    } finally {
+      if (pdfWindow && !pdfWindow.isDestroyed()) {
+        pdfWindow.close();
+      }
     }
   });
 };

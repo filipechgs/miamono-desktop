@@ -63,8 +63,14 @@
           <form id="receipt-filter-form">
             <div class="filter-grid">
               <div class="filter-field">
-                <label for="filter-month">Mês / Ano *</label>
-                <input type="month" id="filter-month" required />
+                <label for="filter-year">Ano *</label>
+                <select id="filter-year" required></select>
+              </div>
+              <div class="filter-field">
+                <label for="filter-month">Mês</label>
+                <select id="filter-month">
+                  <option value="">Todos os meses</option>
+                </select>
               </div>
               <div class="filter-field">
                 <label for="filter-date">Data específica</label>
@@ -90,7 +96,6 @@
               </div>
             </div>
             <div class="actions">
-              <button type="submit">Filtrar</button>
               <button type="button" id="btn-filter-clear" class="secondary">Limpar filtros</button>
             </div>
           </form>
@@ -146,26 +151,16 @@
         <section class="panel">
           <div class="table-header">
             <div id="receipt-totals" class="totals-bar"></div>
-            <button type="button" id="btn-new-receipt">+ Novo recebimento</button>
+            <div class="table-actions">
+              <button type="button" id="btn-export-csv" class="secondary">Exportar CSV</button>
+              <button type="button" id="btn-export-pdf" class="secondary">Exportar PDF</button>
+              <button type="button" id="btn-new-receipt">+ Novo recebimento</button>
+            </div>
           </div>
-          <p id="receipt-hint" class="empty-state">Selecione mês e ano e clique em Filtrar para ver os recebimentos.</p>
+          <p id="receipt-hint" class="empty-state">Selecione um ano para ver os recebimentos. Sem mês, os itens são agrupados por mês; com mês, a visão fica consolidada.</p>
           <p id="receipt-empty" class="empty-state" hidden>Nenhum recebimento encontrado para os filtros aplicados.</p>
-          <div class="table-wrapper" id="receipt-table-wrapper" hidden>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Serviço</th>
-                  <th>Pagador</th>
-                  <th class="col-right">Valor</th>
-                  <th class="col-center">NF</th>
-                  <th>Observações</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="receipt-tbody"></tbody>
-            </table>
-          </div>
+          <div id="receipt-summary" class="summary-panel" hidden></div>
+          <div id="receipt-sections"></div>
         </section>
       </div>
 

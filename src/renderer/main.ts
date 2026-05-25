@@ -22,7 +22,7 @@ interface PayerData {
 
 interface ReceiptFilter {
   year: number;
-  month: number;
+  month?: number;
   date?: string;
   serviceId?: number;
   payerId?: number;
@@ -58,6 +58,43 @@ interface ReceiptListResult {
   totalAmountCents: number;
 }
 
+type ReceiptSortColumn = "receiptDate" | "serviceName" | "payerFullName" | "amountCents" | "hasInvoice";
+type ReceiptSortDirection = "asc" | "desc";
+
+interface ReceiptSortState {
+  column: ReceiptSortColumn;
+  direction: ReceiptSortDirection;
+}
+
+interface ExportSummary {
+  totalCount: number;
+  totalAmountCents: number;
+  averageAmountCents: number;
+  monthlyAverageCents: number | null;
+}
+
+interface ExportSection {
+  label: string;
+  totalCount: number;
+  totalAmountCents: number;
+  items: ReceiptViewData[];
+}
+
+interface ExportDocument {
+  title: string;
+  fileNameBase: string;
+  periodLabel: string;
+  dateLabel: string;
+  serviceLabel: string;
+  payerLabel: string;
+  invoiceLabel: string;
+  generatedAtLabel: string;
+  summary: ExportSummary;
+  sections: ExportSection[];
+}
+
+type ExportPayload = ExportDocument;
+
 declare global {
   interface Window {
     miamono: {
@@ -76,19 +113,19 @@ declare global {
         deactivate: (id: number) => Promise<IpcResult<boolean>>;
       };
       receipts: {
+        listYears: () => Promise<IpcResult<number[]>>;
         listFiltered: (filter: ReceiptFilter) => Promise<IpcResult<ReceiptListResult>>;
         create: (input: CreateReceiptInput) => Promise<IpcResult<ReceiptViewData>>;
         update: (id: number, input: CreateReceiptInput) => Promise<IpcResult<ReceiptViewData>>;
         remove: (id: number) => Promise<IpcResult<boolean>>;
       };
+      exports: {
+        exportCsv: (payload: ExportPayload) => Promise<IpcResult<{ saved: boolean; filePath?: string }>>;
+        exportPdf: (payload: ExportPayload) => Promise<IpcResult<{ saved: boolean; filePath?: string }>>;
+      };
     };
   }
 }
-
-// ── Initialization ────────────────────────────────────────────────────────────
-console.log("Renderer initialized, miamono API available:", typeof window.miamono);
-
-// ── Feedback ──────────────────────────────────────────────────────────────────
 
 const feedbackEl = document.getElementById("feedback") as HTMLParagraphElement;
 
@@ -102,8 +139,6 @@ const showFeedback = (message: string, isError = false): void => {
     feedbackEl.className = "feedback";
   }, 4000);
 };
-
-// ── Services ──────────────────────────────────────────────────────────────────
 
 const serviceForm = document.getElementById("service-form") as HTMLFormElement;
 const serviceIdInput = document.getElementById("service-id") as HTMLInputElement;
@@ -177,9 +212,7 @@ const renderServiceList = (services: ServiceData[]): void => {
 
 const loadServices = async (): Promise<void> => {
   const result = await window.miamono.services.list();
-  if (result.ok && result.data) {
-    renderServiceList(result.data);
-  }
+  if (result.ok && result.data) renderServiceList(result.data);
 };
 
 const resetServiceForm = (): void => {
@@ -198,32 +231,26 @@ serviceForm.addEventListener("submit", async (event) => {
 
   const existingId = serviceIdInput.value ? Number(serviceIdInput.value) : null;
 
-  try {
-    if (existingId) {
-      const result = await window.miamono.services.update(existingId, name);
-      if (result.ok) {
-        showFeedback("Serviço atualizado com sucesso.");
-        resetServiceForm();
-        await loadServices();
-      } else {
-        showFeedback(result.errorMessage ?? "Erro ao atualizar serviço.", true);
-      }
+  if (existingId) {
+    const result = await window.miamono.services.update(existingId, name);
+    if (result.ok) {
+      showFeedback("Serviço atualizado com sucesso.");
+      resetServiceForm();
+      await loadServices();
     } else {
-      const result = await window.miamono.services.create(name);
-      if (result.ok) {
-        showFeedback("Serviço cadastrado com sucesso.");
-        resetServiceForm();
-        await loadServices();
-      } else {
-        showFeedback(result.errorMessage ?? "Erro ao cadastrar serviço.", true);
-      }
+      showFeedback(result.errorMessage ?? "Erro ao atualizar serviço.", true);
     }
-  } catch (error) {
-    showFeedback("Erro inesperado ao processar formulário.", true);
+  } else {
+    const result = await window.miamono.services.create(name);
+    if (result.ok) {
+      showFeedback("Serviço cadastrado com sucesso.");
+      resetServiceForm();
+      await loadServices();
+    } else {
+      showFeedback(result.errorMessage ?? "Erro ao cadastrar serviço.", true);
+    }
   }
 });
-
-// ── Payers ────────────────────────────────────────────────────────────────────
 
 const payerForm = document.getElementById("payer-form") as HTMLFormElement;
 const payerIdInput = document.getElementById("payer-id") as HTMLInputElement;
@@ -297,9 +324,7 @@ const renderPayerList = (payers: PayerData[]): void => {
 
 const loadPayers = async (): Promise<void> => {
   const result = await window.miamono.payers.list();
-  if (result.ok && result.data) {
-    renderPayerList(result.data);
-  }
+  if (result.ok && result.data) renderPayerList(result.data);
 };
 
 const resetPayerForm = (): void => {
@@ -339,12 +364,8 @@ payerForm.addEventListener("submit", async (event) => {
   }
 });
 
-// ── Bootstrap ─────────────────────────────────────────────────────────────────
-
 await loadServices();
 await loadPayers();
-
-// ── Tab navigation ────────────────────────────────────────────────────────────
 
 const viewRegistrations = document.getElementById("view-registrations") as HTMLDivElement;
 const viewReceipts = document.getElementById("view-receipts") as HTMLDivElement;
@@ -359,9 +380,7 @@ document.querySelectorAll<HTMLButtonElement>(".tab-btn").forEach((btn) => {
     btn.classList.add("active");
     btn.setAttribute("aria-selected", "true");
 
-    const view = btn.dataset.view;
-
-    if (view === "registrations") {
+    if (btn.dataset.view === "registrations") {
       viewRegistrations.hidden = false;
       viewReceipts.hidden = true;
     } else {
@@ -372,7 +391,20 @@ document.querySelectorAll<HTMLButtonElement>(".tab-btn").forEach((btn) => {
   });
 });
 
-// ── Receipts ──────────────────────────────────────────────────────────────────
+const MONTH_LABELS = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
 
 const formatCurrency = (cents: number): string =>
   (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -395,16 +427,18 @@ const formatDate = (isoDate: string): string => {
   return `${day}/${month}/${year}`;
 };
 
-// Filter form elements
+const formatMonthLabel = (month: number, year: number): string => `${MONTH_LABELS[month - 1]} de ${year}`;
+const formatMonthShortLabel = (month: number, year: number): string => `${String(month).padStart(2, "0")}/${year}`;
+
 const receiptFilterForm = document.getElementById("receipt-filter-form") as HTMLFormElement;
-const filterMonthInput = document.getElementById("filter-month") as HTMLInputElement;
+const filterYearSelect = document.getElementById("filter-year") as HTMLSelectElement;
+const filterMonthSelect = document.getElementById("filter-month") as HTMLSelectElement;
 const filterDateInput = document.getElementById("filter-date") as HTMLInputElement;
 const filterServiceSelect = document.getElementById("filter-service") as HTMLSelectElement;
 const filterPayerSelect = document.getElementById("filter-payer") as HTMLSelectElement;
 const filterHasInvoiceCheckbox = document.getElementById("filter-has-invoice") as HTMLInputElement;
 const btnFilterClear = document.getElementById("btn-filter-clear") as HTMLButtonElement;
 
-// Receipt form elements
 const receiptFormPanel = document.getElementById("receipt-form-panel") as HTMLElement;
 const receiptFormTitleEl = document.getElementById("receipt-form-title") as HTMLHeadingElement;
 const receiptForm = document.getElementById("receipt-form") as HTMLFormElement;
@@ -417,21 +451,25 @@ const receiptHasInvoiceCheckbox = document.getElementById("receipt-has-invoice")
 const receiptNotesTextarea = document.getElementById("receipt-notes") as HTMLTextAreaElement;
 const receiptCancelBtn = document.getElementById("receipt-cancel") as HTMLButtonElement;
 
-// Results elements
 const receiptTotalsEl = document.getElementById("receipt-totals") as HTMLDivElement;
+const receiptSummaryEl = document.getElementById("receipt-summary") as HTMLDivElement;
 const receiptHintEl = document.getElementById("receipt-hint") as HTMLParagraphElement;
 const receiptEmptyEl = document.getElementById("receipt-empty") as HTMLParagraphElement;
-const receiptTableWrapper = document.getElementById("receipt-table-wrapper") as HTMLDivElement;
-const receiptTbody = document.getElementById("receipt-tbody") as HTMLTableSectionElement;
+const receiptSectionsEl = document.getElementById("receipt-sections") as HTMLDivElement;
+const btnExportCsv = document.getElementById("btn-export-csv") as HTMLButtonElement;
+const btnExportPdf = document.getElementById("btn-export-pdf") as HTMLButtonElement;
 const btnNewReceipt = document.getElementById("btn-new-receipt") as HTMLButtonElement;
 
-// Track all active services/payers loaded for the receipts view
 let receiptViewServices: ServiceData[] = [];
 let receiptViewPayers: PayerData[] = [];
+let currentReceiptFilter: ReceiptFilter | null = null;
+let currentReceiptItems: ReceiptViewData[] = [];
+let currentReceiptDocument: ExportDocument | null = null;
+let receiptSortState: ReceiptSortState = { column: "receiptDate", direction: "desc" };
 
-const applyReceiptAmountMask = (): void => {
-  const cents = parseCurrencyInputToCents(receiptAmountInput.value);
-  receiptAmountInput.value = cents ? formatCurrencyInput(cents) : "";
+const setExportButtonsEnabled = (enabled: boolean): void => {
+  btnExportCsv.disabled = !enabled;
+  btnExportPdf.disabled = !enabled;
 };
 
 const populateSelectOptions = (
@@ -443,52 +481,68 @@ const populateSelectOptions = (
   select.innerHTML = `<option value="">${placeholder}</option>`;
 
   for (const item of items) {
-    const opt = document.createElement("option");
-    opt.value = String(item.id);
-    opt.textContent = item.label;
-    select.appendChild(opt);
+    const option = document.createElement("option");
+    option.value = String(item.id);
+    option.textContent = item.label;
+    select.appendChild(option);
   }
 
   select.value = currentValue;
 };
 
-const initReceiptsView = async (): Promise<void> => {
-  const [servicesResult, payersResult] = await Promise.all([
-    window.miamono.services.list(),
-    window.miamono.payers.list(),
-  ]);
+const populateYearOptions = (select: HTMLSelectElement, years: number[]): void => {
+  const currentValue = select.value;
+  select.innerHTML = "";
 
-  if (servicesResult.ok && servicesResult.data) {
-    receiptViewServices = servicesResult.data.filter((s) => s.isActive);
-    const serviceItems = receiptViewServices.map((s) => ({ id: s.id, label: s.serviceName }));
-    populateSelectOptions(filterServiceSelect, serviceItems, "Todos os serviços");
-    populateSelectOptions(receiptServiceSelect, serviceItems, "Selecionar...");
+  for (const year of years) {
+    const option = document.createElement("option");
+    option.value = String(year);
+    option.textContent = String(year);
+    select.appendChild(option);
   }
 
-  if (payersResult.ok && payersResult.data) {
-    receiptViewPayers = payersResult.data.filter((p) => p.isActive);
-    const payerItems = receiptViewPayers.map((p) => ({ id: p.id, label: p.payerFullName }));
-    populateSelectOptions(filterPayerSelect, payerItems, "Todos os pagadores");
-    populateSelectOptions(receiptPayerSelect, payerItems, "Selecionar...");
+  if (years.length === 0) {
+    select.value = "";
+    return;
   }
 
-  // Default the month filter to current month if not already set
-  if (!filterMonthInput.value) {
-    filterMonthInput.value = new Date().toISOString().slice(0, 7);
-    await runFilter();
-  }
+  select.value = currentValue && years.includes(Number(currentValue))
+    ? currentValue
+    : String(years[0]);
+};
+
+const populateMonthOptions = (select: HTMLSelectElement): void => {
+  const currentValue = select.value;
+  select.innerHTML = `<option value="">Todos os meses</option>`;
+
+  MONTH_LABELS.forEach((label, index) => {
+    const option = document.createElement("option");
+    option.value = String(index + 1);
+    option.textContent = label;
+    select.appendChild(option);
+  });
+
+  select.value = currentValue;
+};
+
+const getSelectedServiceLabel = (): string => {
+  if (!filterServiceSelect.value) return "Todos os serviços";
+
+  return receiptViewServices.find((item) => item.id === Number(filterServiceSelect.value))?.serviceName ?? "Selecionado";
+};
+
+const getSelectedPayerLabel = (): string => {
+  if (!filterPayerSelect.value) return "Todos os pagadores";
+
+  return receiptViewPayers.find((item) => item.id === Number(filterPayerSelect.value))?.payerFullName ?? "Selecionado";
 };
 
 const buildFilter = (): ReceiptFilter | null => {
-  const monthValue = filterMonthInput.value; // YYYY-MM
-  if (!monthValue) return null;
+  if (!filterYearSelect.value) return null;
 
-  const [yearStr, monthStr] = monthValue.split("-");
-  const filter: ReceiptFilter = {
-    year: Number(yearStr),
-    month: Number(monthStr),
-  };
+  const filter: ReceiptFilter = { year: Number(filterYearSelect.value) };
 
+  if (filterMonthSelect.value) filter.month = Number(filterMonthSelect.value);
   if (filterDateInput.value) filter.date = filterDateInput.value;
   if (filterServiceSelect.value) filter.serviceId = Number(filterServiceSelect.value);
   if (filterPayerSelect.value) filter.payerId = Number(filterPayerSelect.value);
@@ -497,137 +551,174 @@ const buildFilter = (): ReceiptFilter | null => {
   return filter;
 };
 
-const renderReceiptsTable = (result: ReceiptListResult): void => {
-  receiptTbody.innerHTML = "";
+const sortReceiptItems = (items: ReceiptViewData[], sortState: ReceiptSortState): ReceiptViewData[] => {
+  const sortedItems = [...items];
 
-  if (result.totalCount === 0) {
-    receiptTableWrapper.hidden = true;
-    receiptEmptyEl.hidden = false;
-    receiptTotalsEl.textContent = "";
-    return;
-  }
+  sortedItems.sort((left, right) => {
+    let comparison = 0;
 
-  receiptEmptyEl.hidden = true;
-  receiptTableWrapper.hidden = false;
+    switch (sortState.column) {
+      case "receiptDate":
+        comparison = left.receiptDate.localeCompare(right.receiptDate);
+        break;
+      case "serviceName":
+        comparison = left.serviceName.localeCompare(right.serviceName, "pt-BR", { sensitivity: "base" });
+        break;
+      case "payerFullName":
+        comparison = left.payerFullName.localeCompare(right.payerFullName, "pt-BR", { sensitivity: "base" });
+        break;
+      case "amountCents":
+        comparison = left.amountCents - right.amountCents;
+        break;
+      case "hasInvoice":
+        comparison = Number(left.hasInvoice) - Number(right.hasInvoice);
+        break;
+    }
 
-  receiptTotalsEl.innerHTML =
-    `<strong>${result.totalCount}</strong> recebimento${result.totalCount !== 1 ? "s" : ""}` +
-    ` &mdash; Total: <strong>${formatCurrency(result.totalAmountCents)}</strong>`;
+    return sortState.direction === "asc" ? comparison : -comparison;
+  });
 
-  for (const item of result.items) {
-    const tr = document.createElement("tr");
-
-    const tdDate = document.createElement("td");
-    tdDate.textContent = formatDate(item.receiptDate);
-
-    const tdService = document.createElement("td");
-    tdService.textContent = item.serviceName;
-
-    const tdPayer = document.createElement("td");
-    tdPayer.textContent = item.payerFullName;
-
-    const tdAmount = document.createElement("td");
-    tdAmount.className = "col-right";
-    tdAmount.textContent = formatCurrency(item.amountCents);
-
-    const tdInvoice = document.createElement("td");
-    tdInvoice.className = "col-center";
-    tdInvoice.textContent = item.hasInvoice ? "✓" : "—";
-
-    const tdNotes = document.createElement("td");
-    tdNotes.textContent = item.notes ?? "";
-    tdNotes.className = "col-notes";
-
-    const tdActions = document.createElement("td");
-    const actionsDiv = document.createElement("div");
-    actionsDiv.className = "item-actions";
-
-    const editBtn = document.createElement("button");
-    editBtn.type = "button";
-    editBtn.textContent = "Editar";
-    editBtn.className = "secondary";
-    editBtn.addEventListener("click", () => openReceiptEditForm(item));
-
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.textContent = "Excluir";
-    removeBtn.className = "danger";
-    removeBtn.addEventListener("click", async () => {
-      if (!confirm(`Excluir o recebimento de ${formatCurrency(item.amountCents)} em ${formatDate(item.receiptDate)}?`)) return;
-
-      const result = await window.miamono.receipts.remove(item.id);
-      if (result.ok) {
-        showFeedback("Recebimento excluído.");
-        await runFilter();
-      } else {
-        showFeedback(result.errorMessage ?? "Erro ao excluir recebimento.", true);
-      }
-    });
-
-    actionsDiv.appendChild(editBtn);
-    actionsDiv.appendChild(removeBtn);
-    tdActions.appendChild(actionsDiv);
-
-    tr.appendChild(tdDate);
-    tr.appendChild(tdService);
-    tr.appendChild(tdPayer);
-    tr.appendChild(tdAmount);
-    tr.appendChild(tdInvoice);
-    tr.appendChild(tdNotes);
-    tr.appendChild(tdActions);
-    receiptTbody.appendChild(tr);
-  }
+  return sortedItems;
 };
 
-const runFilter = async (): Promise<void> => {
-  const filter = buildFilter();
+const buildReceiptSections = (items: ReceiptViewData[], filter: ReceiptFilter, sortState: ReceiptSortState): ExportSection[] => {
+  const sortedItems = sortReceiptItems(items, sortState);
 
-  if (!filter) {
-    showFeedback("Selecione um mês para filtrar.", true);
-    return;
+  if (filter.month) {
+    const totalAmountCents = sortedItems.reduce((sum, item) => sum + item.amountCents, 0);
+    return [{
+      label: formatMonthLabel(filter.month, filter.year),
+      totalCount: sortedItems.length,
+      totalAmountCents,
+      items: sortedItems,
+    }];
   }
 
-  receiptHintEl.hidden = true;
+  const grouped = new Map<number, ReceiptViewData[]>();
 
-  const result = await window.miamono.receipts.listFiltered(filter);
-
-  if (result.ok && result.data) {
-    renderReceiptsTable(result.data);
-  } else {
-    showFeedback(result.errorMessage ?? "Erro ao carregar recebimentos.", true);
+  for (const item of sortedItems) {
+    const month = Number(item.receiptDate.slice(5, 7));
+    const current = grouped.get(month) ?? [];
+    current.push(item);
+    grouped.set(month, current);
   }
+
+  return Array.from(grouped.entries())
+    .sort(([leftMonth], [rightMonth]) => rightMonth - leftMonth)
+    .map(([month, monthItems]) => ({
+      label: formatMonthLabel(month, filter.year),
+      totalCount: monthItems.length,
+      totalAmountCents: monthItems.reduce((sum, item) => sum + item.amountCents, 0),
+      items: monthItems,
+    }));
 };
 
-receiptFilterForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  await runFilter();
-});
+const buildReceiptDocument = (): ExportDocument | null => {
+  if (!currentReceiptFilter) return null;
 
-btnFilterClear.addEventListener("click", () => {
-  filterMonthInput.value = new Date().toISOString().slice(0, 7);
-  filterDateInput.value = "";
-  filterServiceSelect.value = "";
-  filterPayerSelect.value = "";
-  filterHasInvoiceCheckbox.checked = false;
-  receiptTableWrapper.hidden = true;
-  receiptEmptyEl.hidden = true;
-  receiptHintEl.hidden = false;
-  receiptTotalsEl.textContent = "";
-});
+  const sections = buildReceiptSections(currentReceiptItems, currentReceiptFilter, receiptSortState);
+  const totalCount = currentReceiptItems.length;
+  const totalAmountCents = currentReceiptItems.reduce((sum, item) => sum + item.amountCents, 0);
+  const averageAmountCents = totalCount ? Math.round(totalAmountCents / totalCount) : 0;
+  const monthlyAverageCents = sections.length > 1
+    ? Math.round(sections.reduce((sum, section) => sum + section.totalAmountCents, 0) / sections.length)
+    : null;
+  const periodLabel = currentReceiptFilter.month
+    ? formatMonthShortLabel(currentReceiptFilter.month, currentReceiptFilter.year)
+    : `Ano ${currentReceiptFilter.year}`;
 
-// ── Receipt form ──────────────────────────────────────────────────────────────
+  return {
+    title: "Relatório de Recebimentos",
+    fileNameBase: currentReceiptFilter.month
+      ? `recebimentos_${currentReceiptFilter.year}-${String(currentReceiptFilter.month).padStart(2, "0")}`
+      : `recebimentos_${currentReceiptFilter.year}`,
+    periodLabel,
+    dateLabel: currentReceiptFilter.date ? formatDate(currentReceiptFilter.date) : "Todas as datas",
+    serviceLabel: getSelectedServiceLabel(),
+    payerLabel: getSelectedPayerLabel(),
+    invoiceLabel: currentReceiptFilter.hasInvoice ? "Sim" : "Não",
+    generatedAtLabel: new Date().toLocaleString("pt-BR"),
+    summary: { totalCount, totalAmountCents, averageAmountCents, monthlyAverageCents },
+    sections,
+  };
+};
 
-const openReceiptCreateForm = (): void => {
-  receiptIdInput.value = "";
-  receiptDateInput.value = filterDateInput.value || new Date().toISOString().slice(0, 10);
-  receiptAmountInput.value = "";
-  receiptServiceSelect.value = "";
-  receiptPayerSelect.value = "";
-  receiptHasInvoiceCheckbox.checked = false;
-  receiptNotesTextarea.value = "";
-  receiptFormTitleEl.textContent = "Novo Recebimento";
-  receiptFormPanel.hidden = false;
-  receiptDateInput.focus();
+const renderSummary = (documentModel: ExportDocument): void => {
+  receiptTotalsEl.innerHTML = `${documentModel.periodLabel} &mdash; <strong>${documentModel.summary.totalCount}</strong> recebimento${documentModel.summary.totalCount !== 1 ? "s" : ""} &mdash; Total: <strong>${formatCurrency(documentModel.summary.totalAmountCents)}</strong>`;
+
+  const monthlyAverageMetric = documentModel.summary.monthlyAverageCents !== null
+    ? `<div class="summary-metric"><span>Média mensal</span><strong>${formatCurrency(documentModel.summary.monthlyAverageCents)}</strong></div>`
+    : "";
+
+  receiptSummaryEl.hidden = false;
+  receiptSummaryEl.innerHTML = `
+    <div class="summary-metric"><span>Período</span><strong>${documentModel.periodLabel}</strong></div>
+    <div class="summary-metric"><span>Total recebido</span><strong>${formatCurrency(documentModel.summary.totalAmountCents)}</strong></div>
+    <div class="summary-metric"><span>Média por recebimento</span><strong>${formatCurrency(documentModel.summary.averageAmountCents)}</strong></div>
+    ${monthlyAverageMetric}
+  `;
+};
+
+const renderSortSelect = (column: ReceiptSortColumn, currentValue: ReceiptSortDirection | ""): HTMLSelectElement => {
+  const select = document.createElement("select");
+  select.className = "sort-select";
+  select.dataset.sortColumn = column;
+  select.innerHTML = `
+    <option value="">Ordenar</option>
+    <option value="asc">Menor / A-Z</option>
+    <option value="desc">Maior / Z-A</option>
+  `;
+  select.value = currentValue;
+
+  select.addEventListener("change", () => {
+    const direction = select.value as ReceiptSortDirection | "";
+    if (!direction) return;
+
+    receiptSortState = { column, direction };
+    renderCurrentReceiptsView();
+  });
+
+  return select;
+};
+
+const renderTableHeader = (): HTMLTableSectionElement => {
+  const thead = document.createElement("thead");
+  const row = document.createElement("tr");
+
+  const columns: Array<{ label: string; sortable?: ReceiptSortColumn; className?: string }> = [
+    { label: "Data", sortable: "receiptDate" },
+    { label: "Serviço", sortable: "serviceName" },
+    { label: "Pagador", sortable: "payerFullName" },
+    { label: "Valor", sortable: "amountCents", className: "col-right" },
+    { label: "NF", sortable: "hasInvoice", className: "col-center" },
+    { label: "Observações" },
+    { label: "" },
+  ];
+
+  for (const column of columns) {
+    const th = document.createElement("th");
+    if (column.className) th.className = column.className;
+
+    if (column.sortable) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "sortable-header";
+
+      const label = document.createElement("span");
+      label.textContent = column.label;
+
+      const currentValue = receiptSortState.column === column.sortable ? receiptSortState.direction : "";
+      wrapper.appendChild(label);
+      wrapper.appendChild(renderSortSelect(column.sortable, currentValue));
+      th.appendChild(wrapper);
+    } else {
+      th.textContent = column.label;
+    }
+
+    row.appendChild(th);
+  }
+
+  thead.appendChild(row);
+  return thead;
 };
 
 const openReceiptEditForm = (item: ReceiptViewData): void => {
@@ -643,6 +734,285 @@ const openReceiptEditForm = (item: ReceiptViewData): void => {
   receiptDateInput.focus();
 };
 
+const renderReceiptSectionTable = (section: ExportSection): HTMLDivElement => {
+  const container = document.createElement("div");
+  container.className = "month-section-card";
+
+  const header = document.createElement("div");
+  header.className = "month-header";
+
+  const title = document.createElement("h3");
+  title.textContent = section.label;
+
+  const monthSummary = document.createElement("div");
+  monthSummary.className = "month-summary";
+  monthSummary.innerHTML = `<span><strong>${section.totalCount}</strong> recebimento${section.totalCount !== 1 ? "s" : ""}</span><span>Total: <strong>${formatCurrency(section.totalAmountCents)}</strong></span>`;
+
+  header.appendChild(title);
+  header.appendChild(monthSummary);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "table-wrapper";
+
+  const table = document.createElement("table");
+  table.className = "data-table";
+  table.appendChild(renderTableHeader());
+
+  const tbody = document.createElement("tbody");
+
+  if (section.items.length === 0) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 7;
+    td.className = "empty-table-cell";
+    td.textContent = "Nenhum recebimento neste período.";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  } else {
+    for (const item of section.items) {
+      const tr = document.createElement("tr");
+
+      const tdDate = document.createElement("td");
+      tdDate.textContent = formatDate(item.receiptDate);
+
+      const tdService = document.createElement("td");
+      tdService.textContent = item.serviceName;
+
+      const tdPayer = document.createElement("td");
+      tdPayer.textContent = item.payerFullName;
+
+      const tdAmount = document.createElement("td");
+      tdAmount.className = "col-right";
+      tdAmount.textContent = formatCurrency(item.amountCents);
+
+      const tdInvoice = document.createElement("td");
+      tdInvoice.className = "col-center";
+      tdInvoice.textContent = item.hasInvoice ? "✓" : "—";
+
+      const tdNotes = document.createElement("td");
+      tdNotes.textContent = item.notes ?? "";
+      tdNotes.className = "col-notes";
+
+      const tdActions = document.createElement("td");
+      const actionsDiv = document.createElement("div");
+      actionsDiv.className = "item-actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.textContent = "Editar";
+      editBtn.className = "secondary";
+      editBtn.addEventListener("click", () => openReceiptEditForm(item));
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.textContent = "Excluir";
+      removeBtn.className = "danger";
+      removeBtn.addEventListener("click", async () => {
+        if (!confirm(`Excluir o recebimento de ${formatCurrency(item.amountCents)} em ${formatDate(item.receiptDate)}?`)) return;
+
+        const result = await window.miamono.receipts.remove(item.id);
+        if (result.ok) {
+          showFeedback("Recebimento excluído.");
+          await runFilter();
+        } else {
+          showFeedback(result.errorMessage ?? "Erro ao excluir recebimento.", true);
+        }
+      });
+
+      actionsDiv.appendChild(editBtn);
+      actionsDiv.appendChild(removeBtn);
+      tdActions.appendChild(actionsDiv);
+
+      tr.appendChild(tdDate);
+      tr.appendChild(tdService);
+      tr.appendChild(tdPayer);
+      tr.appendChild(tdAmount);
+      tr.appendChild(tdInvoice);
+      tr.appendChild(tdNotes);
+      tr.appendChild(tdActions);
+      tbody.appendChild(tr);
+    }
+  }
+
+  table.appendChild(tbody);
+  wrapper.appendChild(table);
+  container.appendChild(header);
+  container.appendChild(wrapper);
+  return container;
+};
+
+const renderCurrentReceiptsView = (): void => {
+  const documentModel = buildReceiptDocument();
+  currentReceiptDocument = documentModel;
+
+  receiptSectionsEl.innerHTML = "";
+
+  if (!documentModel || documentModel.summary.totalCount === 0) {
+    receiptTotalsEl.textContent = "";
+    receiptSummaryEl.hidden = true;
+    receiptEmptyEl.hidden = false;
+    receiptHintEl.hidden = true;
+    setExportButtonsEnabled(false);
+    return;
+  }
+
+  receiptEmptyEl.hidden = true;
+  receiptHintEl.hidden = true;
+  renderSummary(documentModel);
+  setExportButtonsEnabled(true);
+
+  for (const section of documentModel.sections) {
+    receiptSectionsEl.appendChild(renderReceiptSectionTable(section));
+  }
+};
+
+const initReceiptsView = async (): Promise<void> => {
+  const [yearsResult, servicesResult, payersResult] = await Promise.all([
+    window.miamono.receipts.listYears(),
+    window.miamono.services.list(),
+    window.miamono.payers.list(),
+  ]);
+
+  const years = yearsResult.ok && yearsResult.data
+    ? yearsResult.data
+    : [];
+
+  populateYearOptions(filterYearSelect, years);
+  populateMonthOptions(filterMonthSelect);
+
+  if (servicesResult.ok && servicesResult.data) {
+    receiptViewServices = servicesResult.data.filter((s) => s.isActive);
+    const serviceItems = receiptViewServices.map((s) => ({ id: s.id, label: s.serviceName }));
+    populateSelectOptions(filterServiceSelect, serviceItems, "Todos os serviços");
+    populateSelectOptions(receiptServiceSelect, serviceItems, "Selecionar...");
+  }
+
+  if (payersResult.ok && payersResult.data) {
+    receiptViewPayers = payersResult.data.filter((p) => p.isActive);
+    const payerItems = receiptViewPayers.map((p) => ({ id: p.id, label: p.payerFullName }));
+    populateSelectOptions(filterPayerSelect, payerItems, "Todos os pagadores");
+    populateSelectOptions(receiptPayerSelect, payerItems, "Selecionar...");
+  }
+
+  await runFilter();
+};
+
+const runFilter = async (): Promise<void> => {
+  const filter = buildFilter();
+
+  if (!filter) {
+    currentReceiptFilter = null;
+    currentReceiptItems = [];
+    currentReceiptDocument = null;
+    setExportButtonsEnabled(false);
+    receiptTotalsEl.textContent = "";
+    receiptSummaryEl.hidden = true;
+    receiptSectionsEl.innerHTML = "";
+    receiptEmptyEl.hidden = true;
+    receiptHintEl.hidden = false;
+    showFeedback("Selecione um ano para filtrar.", true);
+    return;
+  }
+
+  currentReceiptFilter = filter;
+  receiptHintEl.hidden = true;
+
+  const result = await window.miamono.receipts.listFiltered(filter);
+
+  if (result.ok && result.data) {
+    currentReceiptItems = result.data.items;
+    renderCurrentReceiptsView();
+  } else {
+    currentReceiptItems = [];
+    currentReceiptDocument = null;
+    setExportButtonsEnabled(false);
+    receiptSummaryEl.hidden = true;
+    receiptSectionsEl.innerHTML = "";
+    receiptEmptyEl.hidden = true;
+    showFeedback(result.errorMessage ?? "Erro ao carregar recebimentos.", true);
+  }
+};
+
+const runExport = async (kind: "csv" | "pdf"): Promise<void> => {
+  if (!currentReceiptDocument || currentReceiptDocument.summary.totalCount === 0) {
+    showFeedback("Não há dados para exportar com os filtros atuais.", true);
+    return;
+  }
+
+  const exportResult = kind === "csv"
+    ? await window.miamono.exports.exportCsv(currentReceiptDocument)
+    : await window.miamono.exports.exportPdf(currentReceiptDocument);
+
+  if (!exportResult.ok) {
+    showFeedback(exportResult.errorMessage ?? `Erro ao exportar ${kind.toUpperCase()}.`, true);
+    return;
+  }
+
+  if (!exportResult.data?.saved) {
+    showFeedback(`Exportação ${kind.toUpperCase()} cancelada.`);
+    return;
+  }
+
+  showFeedback(`Arquivo ${kind.toUpperCase()} exportado com sucesso: ${exportResult.data.filePath ?? ""}`);
+};
+
+const applyFilterDynamically = (): void => {
+  void runFilter();
+};
+
+filterYearSelect.addEventListener("change", applyFilterDynamically);
+filterMonthSelect.addEventListener("change", applyFilterDynamically);
+filterDateInput.addEventListener("change", applyFilterDynamically);
+filterServiceSelect.addEventListener("change", applyFilterDynamically);
+filterPayerSelect.addEventListener("change", applyFilterDynamically);
+filterHasInvoiceCheckbox.addEventListener("change", applyFilterDynamically);
+
+receiptFilterForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await runFilter();
+});
+
+btnFilterClear.addEventListener("click", async () => {
+  filterYearSelect.value = String(new Date().getFullYear());
+  filterMonthSelect.value = "";
+  filterDateInput.value = "";
+  filterServiceSelect.value = "";
+  filterPayerSelect.value = "";
+  filterHasInvoiceCheckbox.checked = false;
+  receiptSortState = { column: "receiptDate", direction: "desc" };
+  currentReceiptFilter = null;
+  currentReceiptItems = [];
+  currentReceiptDocument = null;
+  setExportButtonsEnabled(false);
+  receiptTotalsEl.textContent = "";
+  receiptSummaryEl.hidden = true;
+  receiptSectionsEl.innerHTML = "";
+  receiptEmptyEl.hidden = true;
+  receiptHintEl.hidden = false;
+  await runFilter();
+});
+
+btnExportCsv.addEventListener("click", async () => {
+  await runExport("csv");
+});
+
+btnExportPdf.addEventListener("click", async () => {
+  await runExport("pdf");
+});
+
+const openReceiptCreateForm = (): void => {
+  receiptIdInput.value = "";
+  receiptDateInput.value = filterDateInput.value || new Date().toISOString().slice(0, 10);
+  receiptAmountInput.value = "";
+  receiptServiceSelect.value = "";
+  receiptPayerSelect.value = "";
+  receiptHasInvoiceCheckbox.checked = false;
+  receiptNotesTextarea.value = "";
+  receiptFormTitleEl.textContent = "Novo Recebimento";
+  receiptFormPanel.hidden = false;
+  receiptDateInput.focus();
+};
+
 const closeReceiptForm = (): void => {
   receiptFormPanel.hidden = true;
   receiptForm.reset();
@@ -650,8 +1020,14 @@ const closeReceiptForm = (): void => {
 
 btnNewReceipt.addEventListener("click", openReceiptCreateForm);
 receiptCancelBtn.addEventListener("click", closeReceiptForm);
-receiptAmountInput.addEventListener("input", applyReceiptAmountMask);
-receiptAmountInput.addEventListener("blur", applyReceiptAmountMask);
+receiptAmountInput.addEventListener("input", () => {
+  const cents = parseCurrencyInputToCents(receiptAmountInput.value);
+  receiptAmountInput.value = cents ? formatCurrencyInput(cents) : "";
+});
+receiptAmountInput.addEventListener("blur", () => {
+  const cents = parseCurrencyInputToCents(receiptAmountInput.value);
+  receiptAmountInput.value = cents ? formatCurrencyInput(cents) : "";
+});
 
 receiptForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -693,5 +1069,7 @@ receiptForm.addEventListener("submit", async (event) => {
     }
   }
 });
+
+setExportButtonsEnabled(false);
 
 export {};

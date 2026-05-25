@@ -2,7 +2,7 @@ import type { Receipt } from "../model/receipt.ts";
 
 export interface ReceiptFilter {
   year: number;
-  month: number;
+  month?: number;
   date?: string;
   serviceId?: number;
   payerId?: number;
@@ -43,5 +43,6 @@ export interface ReceiptRepository {
   update(id: number, input: CreateReceiptInput): Receipt;
   remove(id: number): void;
   findById(id: number): Receipt | null;
+  listAvailableYears(): number[];
   listFiltered(filter: ReceiptFilter): ReceiptListResult;
 }

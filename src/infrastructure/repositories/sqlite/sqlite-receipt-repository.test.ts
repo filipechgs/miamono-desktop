@@ -288,6 +288,26 @@ test("listFiltered retorna totais corretos", () => {
   assert.equal(result.totalAmountCents, 35000);
 });
 
+test("listFiltered por ano retorna todos os recebimentos do ano sem exigir mês", () => {
+  const db2 = setupDatabase();
+  const r2 = new SqliteReceiptRepository(db2);
+  const ids = seedData(db2);
+  const now = new Date().toISOString();
+
+  db2.prepare(
+    "INSERT INTO receipts (receipt_date, service_id, payer_id, amount_cents, has_invoice, notes, created_at, updated_at) VALUES (?, ?, ?, ?, 0, null, ?, ?)",
+  ).run("2026-01-10", ids.serviceId, ids.payerId, 1100, now, now);
+
+  db2.prepare(
+    "INSERT INTO receipts (receipt_date, service_id, payer_id, amount_cents, has_invoice, notes, created_at, updated_at) VALUES (?, ?, ?, ?, 0, null, ?, ?)",
+  ).run("2026-12-20", ids.serviceId2, ids.payerId2, 2200, now, now);
+
+  const result = r2.listFiltered({ year: 2026 });
+  assert.equal(result.totalCount, 2);
+  assert.equal(result.totalAmountCents, 3300);
+  assert.equal(result.items[0].receiptDate, "2026-12-20");
+});
+
 test("listFiltered inclui serviceName e payerFullName nos itens", () => {
   const db2 = setupDatabase();
   const r2 = new SqliteReceiptRepository(db2);

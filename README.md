@@ -106,6 +106,52 @@ Além do MVC em camadas, a base de código será estruturada por domínios de ne
 - **SQLite** com API nativa do Node.js v24
 - Ferramentas de empacotamento para gerar executáveis em Windows e Linux
 
+## Como Rodar Localmente
+
+### 1. Baixar o código-fonte
+
+Você pode obter o projeto de duas formas:
+
+- Clonar o repositório com Git.
+- Baixar o código-fonte em um arquivo `.zip` pela interface do repositório e extrair em uma pasta local.
+
+### 2. Instalar as dependências
+
+Na raiz do projeto, execute:
+
+```bash
+npm install
+```
+
+### 3. Popular o banco com dados simulados
+
+Antes de abrir o aplicativo pela primeira vez, rode o seed para criar e preencher o banco SQLite com dados simulados de 2024 e 2025:
+
+```bash
+npm run seed
+```
+
+Esse comando recria os dados de desenvolvimento local com registros de serviços, pagadores e recebimentos simulados.
+
+### 4. Iniciar o aplicativo
+
+Depois do seed, inicie a aplicação desktop com:
+
+```bash
+npm start
+```
+
+### Observações
+
+- O banco local fica em `data/miamono.sqlite`.
+- Se você quiser limpar e recriar os dados de teste, basta executar `npm run seed` novamente.
+- No Windows, o comando de seed usa o launcher `py -3`, então o Python precisa estar instalado com esse atalho disponível.
+
+### Solução de Problemas
+
+- Se `npm run seed` falhar porque `py` não foi encontrado, instale o Python no Windows com o launcher padrão habilitado ou execute o script diretamente com o caminho completo do interpretador.
+- Se o aplicativo estiver aberto enquanto você roda o seed, feche-o antes de executar o comando para evitar bloqueio no arquivo SQLite.
+
 ## Fora do Escopo Inicial
 
 - Mecanismos de autenticação e gestão de usuários não fazem parte da primeira versão do projeto.

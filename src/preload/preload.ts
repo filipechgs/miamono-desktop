@@ -18,9 +18,14 @@ contextBridge.exposeInMainWorld("miamono", {
     deactivate: (id: number) => ipcRenderer.invoke("payers:deactivate", id),
   },
   receipts: {
+    listYears: () => ipcRenderer.invoke("receipts:list-years"),
     listFiltered: (filter: unknown) => ipcRenderer.invoke("receipts:list-filtered", filter),
     create: (input: unknown) => ipcRenderer.invoke("receipts:create", input),
     update: (id: number, input: unknown) => ipcRenderer.invoke("receipts:update", id, input),
     remove: (id: number) => ipcRenderer.invoke("receipts:remove", id),
+  },
+  exports: {
+    exportCsv: (payload: unknown) => ipcRenderer.invoke("exports:csv", payload),
+    exportPdf: (payload: unknown) => ipcRenderer.invoke("exports:pdf", payload),
   },
 });

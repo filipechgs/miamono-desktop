@@ -25,6 +25,10 @@ interface ReceiptViewRow extends ReceiptRow {
   payer_full_name: string;
 }
 
+interface ReceiptYearRow {
+  year: string;
+}
+
 const mapRowToReceipt = (row: ReceiptRow): Receipt => ({
   id: row.id,
   receiptDate: row.receipt_date,
@@ -133,15 +137,38 @@ export class SqliteReceiptRepository implements ReceiptRepository {
     return row ? mapRowToReceipt(row) : null;
   }
 
+  listAvailableYears(): number[] {
+    const rows = this.database
+      .prepare(
+        `SELECT DISTINCT substr(receipt_date, 1, 4) AS year
+         FROM receipts
+         ORDER BY year DESC`,
+      )
+      .all() as ReceiptYearRow[];
+
+    return rows
+      .map((row) => Number(row.year))
+      .filter((year) => Number.isInteger(year));
+  }
+
   listFiltered(filter: ReceiptFilter): ReceiptListResult {
     const year = String(filter.year).padStart(4, "0");
-    const month = String(filter.month).padStart(2, "0");
+    const startDate = filter.month
+      ? `${year}-${String(filter.month).padStart(2, "0")}-01`
+      : `${year}-01-01`;
+    const endDate = filter.month
+      ? (() => {
+          const nextMonth = filter.month === 12 ? 1 : filter.month + 1;
+          const nextYear = filter.month === 12 ? filter.year + 1 : filter.year;
+          return `${String(nextYear).padStart(4, "0")}-${String(nextMonth).padStart(2, "0")}-01`;
+        })()
+      : `${String(filter.year + 1).padStart(4, "0")}-01-01`;
 
     const conditions: string[] = [
-      `strftime('%Y', r.receipt_date) = ?`,
-      `strftime('%m', r.receipt_date) = ?`,
+      `r.receipt_date >= ?`,
+      `r.receipt_date < ?`,
     ];
-    const params: (string | number)[] = [year, month];
+    const params: (string | number)[] = [startDate, endDate];
 
     if (filter.date) {
       conditions.push(`r.receipt_date = ?`);

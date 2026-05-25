@@ -24,6 +24,10 @@ export class ReceiptController {
     return this.receiptService.findById(id);
   }
 
+  getAvailableYears() {
+    return this.receiptService.listAvailableYears();
+  }
+
   getFiltered(filter: ReceiptFilter) {
     return this.receiptService.listFiltered(filter);
   }

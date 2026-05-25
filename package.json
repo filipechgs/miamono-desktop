@@ -12,6 +12,7 @@
     "dev": "npm run build && electron .",
     "start": "npm run build && electron .",
     "migrate": "node --experimental-strip-types src/scripts/migrate.ts",
+    "seed": "py -3 src/scripts/seed.py",
     "test": "node --experimental-strip-types --test src/shared/utils/name-normalizer.test.ts src/infrastructure/repositories/sqlite/sqlite-receipt-repository.test.ts",
     "check": "node --experimental-strip-types --check src/main/main.ts",
     "check:migrate": "node --experimental-strip-types --check src/scripts/migrate.ts"

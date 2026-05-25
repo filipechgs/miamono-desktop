@@ -104,15 +104,15 @@ Objetivo:
 
 Tarefas detalhadas:
 
-- [ ] Implementar exportação da listagem filtrada para CSV.
-- [ ] Implementar exportação da listagem filtrada para PDF com tabela estruturada.
-- [ ] Garantir que exportações respeitem exatamente os filtros ativos.
-- [ ] Incluir cabeçalho com período e parâmetros aplicados no relatório.
-- [ ] Incluir totalização de valor no final da exportação.
-- [ ] Padronizar formatação de moeda e data nos arquivos exportados.
-- [ ] Melhorar UX da tela de filtros e listagem para reduzir cliques.
-- [ ] Adicionar confirmações e mensagens de sucesso/erro na exportação.
-- [ ] Cobrir cenários sem resultados e com volume maior de registros.
+- [x] Implementar exportação da listagem filtrada para CSV.
+- [x] Implementar exportação da listagem filtrada para PDF com tabela estruturada.
+- [x] Garantir que exportações respeitem exatamente os filtros ativos.
+- [x] Incluir cabeçalho com período e parâmetros aplicados no relatório.
+- [x] Incluir totalização de valor no final da exportação.
+- [x] Padronizar formatação de moeda e data nos arquivos exportados.
+- [x] Melhorar UX da tela de filtros e listagem para reduzir cliques.
+- [x] Adicionar confirmações e mensagens de sucesso/erro na exportação.
+- [x] Cobrir cenários sem resultados e com volume maior de registros.
 
 Itens de backlog relacionados:
 
@@ -123,6 +123,10 @@ Critérios de aceite da sprint:
 - CSV e PDF são gerados sem erro e com dados corretos.
 - Arquivos exportados representam a tabela filtrada exibida ao usuário.
 - Fluxo de exportação está simples e previsível para uso diário.
+
+### Issues decorrentes da validação do cliente
+- [x] Quando não houver filtro aplicado, a tabela deverá exibir todos os recebimento do ano presente ou do ano selecionado. O usuário deve poder esolher por seletores no cabeçalho de cada coluna a ordem de exibição (do maior para o menor, etc.). O filtro de ano deve ser separado do filtro de mês. Quando apenas o filtro de ano for aplicado cada mês deve ter sua div e tabela propria, exibindo ao final o toal recebido a cada mês. E uma div resumo exibindo a média e o total do período/filtro aplicado. Neste caso a exportação tembém deve ser gerada conforme o que está sendo exibido na tela, com um tabela para cada mês.
+- [x] Terminar de preencher, popular, o banco de dados com informações simuladas dois anos inteiros de recebimentos (2024 e 2025) para simular e testar os filtros e exportações.
 
 ## Sprint 5 - Empacotamento, distribuição e preparação open source
 
